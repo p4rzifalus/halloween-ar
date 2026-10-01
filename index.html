@@ -33,6 +33,10 @@
     padding:15px 28px; border-radius:999px; background:var(--accent); color:#1a0f02;
     min-width:230px; text-align:center; box-sizing:border-box; box-shadow:0 6px 24px rgba(244,165,42,.35); }
   #ticket.show { opacity:1; transform:translate(-50%, 0); pointer-events:auto; }
+  #mode { position:fixed; top:max(14px, env(safe-area-inset-top)); right:14px; z-index:7;
+    min-width:0; padding:8px 14px; font-size:13px; font-weight:500;
+    background:rgba(7,18,26,.6); color:var(--ink); border:1px solid rgba(241,230,207,.25);
+    backdrop-filter:blur(6px); }
   .hidden { display:none !important; }
   #err { color:#ff8a7a; font-size:14px; max-width:320px; }
 </style>
@@ -51,11 +55,14 @@
 <a id="ticket" href="https://afisha.timepad.ru/saint-petersburg/events/vecherinka-tykvennyy-spas-skazhi-da-sayyesclub-4224396"
    target="_blank" rel="noopener">Купить билет</a>
 
+<button id="mode" class="hidden"></button>
+
+<!-- shown while the camera starts; the buttons appear only if it fails -->
 <div class="screen" id="start">
   <h1>Хэллоуин</h1>
-  <p>Наведи камеру телефона на постер — Фредди выйдет из бумаги.</p>
-  <button id="go">Включить камеру</button>
-  <button id="demo" class="ghost">Посмотреть без камеры</button>
+  <p id="status">Включаю камеру…</p>
+  <button id="go" class="hidden">Включить камеру</button>
+  <button id="demo" class="ghost hidden">Посмотреть без камеры</button>
   <p id="err" class="hidden"></p>
 </div>
 
@@ -67,8 +74,11 @@ const $ = (id) => document.getElementById(id);
 const isPreview = new URLSearchParams(location.search).has('preview');
 const showTicket = () => $('ticket').classList.add('show');
 
+// switching modes reloads the page, which also releases the camera
+const gotoPreview = () => { location.search = '?preview'; };
+const gotoAR = () => { location.href = location.pathname; };
+
 async function startAR() {
-  $('go').disabled = true; $('go').textContent = 'Загружаю…';
   try {
     const { MindARThree } = await import('mindar-image-three');
     const mind = new MindARThree({
@@ -93,11 +103,13 @@ async function startAR() {
     await mind.start();
     $('start').classList.add('hidden');
     $('hint').style.display = 'block'; $('frame').style.display = 'block';
+    $('mode').textContent = 'Без камеры'; $('mode').onclick = gotoPreview; $('mode').classList.remove('hidden');
     const clock = new THREE.Clock();
     renderer.setAnimationLoop(() => { poster.update(clock.getElapsedTime()); renderer.render(scene, camera); });
   } catch (e) {
     console.error(e);
-    $('go').disabled = false; $('go').textContent = 'Включить камеру';
+    $('status').classList.add('hidden');
+    $('go').classList.remove('hidden'); $('demo').classList.remove('hidden');
     $('err').textContent = 'Камера недоступна: разреши доступ в настройках браузера. Страница должна открываться по https.';
     $('err').classList.remove('hidden');
   }
@@ -107,12 +119,13 @@ async function startPreview() {
   $('start').classList.add('hidden');
   const { startPreviewScene } = await import('./preview.js');
   await startPreviewScene($('stage'));
+  $('mode').textContent = 'С камерой'; $('mode').onclick = gotoAR; $('mode').classList.remove('hidden');
   setTimeout(showTicket, 1700);
 }
 
-$('go').onclick = startAR;
-$('demo').onclick = startPreview;
-if (isPreview) startPreview();
+$('go').onclick = gotoAR;
+$('demo').onclick = gotoPreview;
+if (isPreview) startPreview(); else startAR();
 </script>
 </body>
 </html>
