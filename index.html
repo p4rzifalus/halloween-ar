@@ -74,6 +74,11 @@ const $ = (id) => document.getElementById(id);
 const isPreview = new URLSearchParams(location.search).has('preview');
 const showTicket = () => $('ticket').classList.add('show');
 
+// Hand-shake smoothing. Each frame the scene moves only part of the way to where
+// the tracker says the poster is: STILL while the phone is held still (lower = calmer),
+// rising toward 1 as the gap grows, so real movements are followed without lag.
+const SMOOTH = { still: 0.22, gain: 25 };
+
 // switching modes reloads the page, which also releases the camera
 const gotoPreview = () => { location.search = '?preview'; };
 const gotoAR = () => { location.href = location.pathname; };
@@ -84,8 +89,7 @@ async function startAR() {
     const mind = new MindARThree({
       container: $('stage'), imageTargetSrc: './assets/poster.mind',
       uiScanning: 'no', uiLoading: 'no', uiError: 'no',
-      // tracking smoothing: higher filterBeta = less lag when the phone moves,
-      // filterMinCF keeps the scene from trembling while the phone is still
+      // the tracker's own smoothing is kept light; shake is calmed by SMOOTH above
       filterMinCF: 0.001, filterBeta: 10,
     });
     const { renderer, scene, camera } = mind;
@@ -94,18 +98,43 @@ async function startAR() {
     // the real print is the background, and the scene must not drift off it
     const poster = await buildPoster('./assets/', { plate: false, idle: false });
     const anchor = mind.addAnchor(0);
-    anchor.group.add(poster.group);
+    // the scene follows the tracked poster through its own smoothed group
+    const follow = new THREE.Group();
+    follow.matrixAutoUpdate = false;
+    follow.add(poster.group);
+    scene.add(follow);
+    const tPos = new THREE.Vector3(), tQuat = new THREE.Quaternion(), tScale = new THREE.Vector3();
+    const pos = new THREE.Vector3(), quat = new THREE.Quaternion(), scale = new THREE.Vector3();
+    let snap = true;
+    function smoothFollow(dt) {
+      follow.visible = anchor.group.visible;
+      if (!anchor.group.visible) return;
+      anchor.group.matrix.decompose(tPos, tQuat, tScale);
+      if (snap) { pos.copy(tPos); quat.copy(tQuat); scale.copy(tScale); snap = false; }
+      else {
+        const gap = Math.max(tPos.distanceTo(pos) / tScale.x, tQuat.angleTo(quat) * 0.5);
+        const a = 1 - Math.pow(1 - Math.min(1, SMOOTH.still + gap * SMOOTH.gain), dt * 60);
+        pos.lerp(tPos, a); quat.slerp(tQuat, a); scale.lerp(tScale, a);
+      }
+      follow.matrix.compose(pos, quat, scale);
+    }
     // the ticket button stays once shown: reaching for it often shakes the poster out of view
     // a brief loss of tracking keeps the scene raised instead of replaying the reveal
     let hideTimer = 0;
-    anchor.onTargetFound = () => { clearTimeout(hideTimer); poster.reveal(); setTimeout(showTicket, 800); $('hint').style.display = 'none'; $('frame').style.display = 'none'; };
+    anchor.onTargetFound = () => { snap = true; clearTimeout(hideTimer); poster.reveal(); setTimeout(showTicket, 800); $('hint').style.display = 'none'; $('frame').style.display = 'none'; };
     anchor.onTargetLost  = () => { hideTimer = setTimeout(() => poster.hide(), 1500); $('hint').style.display = 'block'; $('frame').style.display = 'block'; };
     await mind.start();
     $('start').classList.add('hidden');
     $('hint').style.display = 'block'; $('frame').style.display = 'block';
     $('mode').textContent = 'Без камеры'; $('mode').onclick = gotoPreview; $('mode').classList.remove('hidden');
     const clock = new THREE.Clock();
-    renderer.setAnimationLoop(() => { poster.update(clock.getElapsedTime()); renderer.render(scene, camera); });
+    let last = 0;
+    renderer.setAnimationLoop(() => {
+      const t = clock.getElapsedTime(), dt = Math.min(t - last, 0.1); last = t;
+      smoothFollow(dt);
+      poster.update(t);
+      renderer.render(scene, camera);
+    });
   } catch (e) {
     console.error(e);
     $('status').classList.add('hidden');
