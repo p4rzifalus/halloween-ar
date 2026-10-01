@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Хэллоуин · AR</title>
+<style>
+  :root { --bg:#07121a; --ink:#f1e6cf; --accent:#f4a52a; --muted:#7f97a6; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink);
+    font-family: "Helvetica Neue", Arial, sans-serif; overflow:hidden; }
+  #stage { position:fixed; inset:0; }
+  #stage video { object-fit:cover; }
+  .screen { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:18px; padding:24px; text-align:center; z-index:10;
+    background:radial-gradient(120% 80% at 50% 20%, #12324a 0%, var(--bg) 70%); }
+  .screen h1 { font-family: Impact, "Arial Narrow", sans-serif; font-size:56px; line-height:1;
+    letter-spacing:1px; margin:0; color:var(--accent); text-transform:uppercase; }
+  .screen p { margin:0; max-width:300px; line-height:1.4; color:var(--muted); font-size:15px; }
+  button { font:inherit; font-size:16px; font-weight:700; border:0; border-radius:999px;
+    padding:15px 28px; background:var(--accent); color:#1a0f02; cursor:pointer; min-width:230px; }
+  button.ghost { background:transparent; color:var(--ink); border:1px solid #2c4a5d; font-weight:500; }
+  #hint { position:fixed; left:50%; bottom:max(28px, env(safe-area-inset-bottom)); transform:translateX(-50%);
+    z-index:5; padding:10px 18px; border-radius:999px; background:rgba(7,18,26,.72);
+    backdrop-filter:blur(6px); font-size:14px; white-space:nowrap; display:none; }
+  #frame { position:fixed; left:50%; top:46%; width:58vw; max-width:300px; aspect-ratio:1190/1684;
+    transform:translate(-50%,-50%); border:2px dashed rgba(244,165,42,.7); border-radius:6px;
+    z-index:4; display:none; animation:pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity:.35; } }
+  .hidden { display:none !important; }
+  #err { color:#ff8a7a; font-size:14px; max-width:320px; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+} }
+</script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="frame"></div>
+<div id="hint">Наведи камеру на постер</div>
+
+<div class="screen" id="start">
+  <h1>Хэллоуин</h1>
+  <p>Наведи камеру телефона на постер — Фредди выйдет из бумаги.</p>
+  <button id="go">Включить камеру</button>
+  <button id="demo" class="ghost">Посмотреть без камеры</button>
+  <p id="err" class="hidden"></p>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { buildPoster } from './poster3d.js';
+
+const $ = (id) => document.getElementById(id);
+const isPreview = new URLSearchParams(location.search).has('preview');
+
+async function startAR() {
+  $('go').disabled = true; $('go').textContent = 'Загружаю…';
+  try {
+    const { MindARThree } = await import('mindar-image-three');
+    const mind = new MindARThree({
+      container: $('stage'), imageTargetSrc: './assets/poster.mind',
+      uiScanning: 'no', uiLoading: 'no', uiError: 'no',
+      filterMinCF: 0.0001, filterBeta: 0.004,
+    });
+    const { renderer, scene, camera } = mind;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const poster = await buildPoster();
+    const anchor = mind.addAnchor(0);
+    anchor.group.add(poster.group);
+    anchor.onTargetFound = () => { poster.reveal(); $('hint').style.display = 'none'; $('frame').style.display = 'none'; };
+    anchor.onTargetLost  = () => { poster.hide();  $('hint').style.display = 'block'; $('frame').style.display = 'block'; };
+    await mind.start();
+    $('start').classList.add('hidden');
+    $('hint').style.display = 'block'; $('frame').style.display = 'block';
+    const clock = new THREE.Clock();
+    renderer.setAnimationLoop(() => { poster.update(clock.getElapsedTime()); renderer.render(scene, camera); });
+  } catch (e) {
+    console.error(e);
+    $('go').disabled = false; $('go').textContent = 'Включить камеру';
+    $('err').textContent = 'Камера недоступна: разреши доступ в настройках браузера. Страница должна открываться по https.';
+    $('err').classList.remove('hidden');
+  }
+}
+
+async function startPreview() {
+  $('start').classList.add('hidden');
+  const { startPreviewScene } = await import('./preview.js');
+  startPreviewScene($('stage'));
+}
+
+$('go').onclick = startAR;
+$('demo').onclick = startPreview;
+if (isPreview) startPreview();
+</script>
+</body>
+</html>

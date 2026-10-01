@@ -1,0 +1,116 @@
+{
+ "W": 1190,
+ "H": 1684,
+ "cameraDistance": 1.6,
+ "layers": [
+  {
+   "name": "plate",
+   "file": "plate.jpg",
+   "x": 0,
+   "y": 0,
+   "w": 1190,
+   "h": 1684,
+   "z": 0
+  },
+  {
+   "name": "claw",
+   "file": "claw.png",
+   "x": 90,
+   "y": 0,
+   "w": 516,
+   "h": 1264,
+   "z": 0.06,
+   "shadow": 0.35
+  },
+  {
+   "name": "sparkles",
+   "file": "sparkles.png",
+   "x": 89,
+   "y": 0,
+   "w": 456,
+   "h": 423,
+   "z": 0.065,
+   "additive": true
+  },
+  {
+   "name": "freddy",
+   "file": "freddy.png",
+   "x": 450,
+   "y": 0,
+   "w": 648,
+   "h": 764,
+   "z": 0.11,
+   "shadow": 0.45
+  },
+  {
+   "name": "date",
+   "file": "t_date.png",
+   "x": 81,
+   "y": 564,
+   "w": 154,
+   "h": 28,
+   "z": 0.15,
+   "shadow": 0.25
+  },
+  {
+   "name": "place",
+   "file": "t_place.png",
+   "x": 490,
+   "y": 565,
+   "w": 210,
+   "h": 28,
+   "z": 0.15,
+   "shadow": 0.25
+  },
+  {
+   "name": "time",
+   "file": "t_time.png",
+   "x": 1025,
+   "y": 565,
+   "w": 76,
+   "h": 22,
+   "z": 0.15,
+   "shadow": 0.25
+  },
+  {
+   "name": "title",
+   "file": "t_title.png",
+   "x": 76,
+   "y": 625,
+   "w": 1028,
+   "h": 204,
+   "z": 0.17,
+   "shadow": 0.4
+  },
+  {
+   "name": "kids",
+   "file": "kids.png",
+   "x": 260,
+   "y": 882,
+   "w": 698,
+   "h": 802,
+   "z": 0.22,
+   "shadow": 0.45
+  },
+  {
+   "name": "logo",
+   "file": "t_logo.png",
+   "x": 528,
+   "y": 1394,
+   "w": 132,
+   "h": 56,
+   "z": 0.27,
+   "shadow": 0.25
+  },
+  {
+   "name": "list",
+   "file": "t_list.png",
+   "x": 0,
+   "y": 1488,
+   "w": 1190,
+   "h": 140,
+   "z": 0.3,
+   "shadow": 0.25
+  }
+ ]
+}
