@@ -74,16 +74,22 @@ async function startAR() {
     const mind = new MindARThree({
       container: $('stage'), imageTargetSrc: './assets/poster.mind',
       uiScanning: 'no', uiLoading: 'no', uiError: 'no',
-      filterMinCF: 0.0001, filterBeta: 0.004,
+      // tracking smoothing: higher filterBeta = less lag when the phone moves,
+      // filterMinCF keeps the scene from trembling while the phone is still
+      filterMinCF: 0.001, filterBeta: 10,
     });
     const { renderer, scene, camera } = mind;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    const poster = await buildPoster();
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    // the real print is the background, and the scene must not drift off it
+    const poster = await buildPoster('./assets/', { plate: false, idle: false });
     const anchor = mind.addAnchor(0);
     anchor.group.add(poster.group);
     // the ticket button stays once shown: reaching for it often shakes the poster out of view
-    anchor.onTargetFound = () => { poster.reveal(); setTimeout(showTicket, 1200); $('hint').style.display = 'none'; $('frame').style.display = 'none'; };
-    anchor.onTargetLost  = () => { poster.hide();  $('hint').style.display = 'block'; $('frame').style.display = 'block'; };
+    // a brief loss of tracking keeps the scene raised instead of replaying the reveal
+    let hideTimer = 0;
+    anchor.onTargetFound = () => { clearTimeout(hideTimer); poster.reveal(); setTimeout(showTicket, 800); $('hint').style.display = 'none'; $('frame').style.display = 'none'; };
+    anchor.onTargetLost  = () => { hideTimer = setTimeout(() => poster.hide(), 1500); $('hint').style.display = 'block'; $('frame').style.display = 'block'; };
     await mind.start();
     $('start').classList.add('hidden');
     $('hint').style.display = 'block'; $('frame').style.display = 'block';

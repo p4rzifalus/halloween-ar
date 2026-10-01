@@ -20,7 +20,9 @@
    "w": 516,
    "h": 1264,
    "z": 0.06,
-   "shadow": 0.35
+   "shadow": 0.35,
+   "bulge": 0.035,
+   "thickness": 0.02
   },
   {
    "name": "sparkles",
@@ -40,7 +42,9 @@
    "w": 648,
    "h": 764,
    "z": 0.11,
-   "shadow": 0.45
+   "shadow": 0.45,
+   "bulge": 0.06,
+   "thickness": 0.03
   },
   {
    "name": "date",
