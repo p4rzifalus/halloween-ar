@@ -79,7 +79,7 @@ const showTicket = () => { $('ticket').classList.add('show'); document.body.clas
 // Hand-shake smoothing. Each frame the scene moves only part of the way to where
 // the tracker says the poster is: STILL while the phone is held still (lower = calmer),
 // rising toward 1 as the gap grows, so real movements are followed without lag.
-const SMOOTH = { still: 0.22, gain: 25 };
+const SMOOTH = { still: 0.08, gain: 10 };
 
 // switching modes reloads the page, which also releases the camera
 const gotoPreview = () => { location.search = '?preview'; };
