@@ -45,7 +45,7 @@ export async function startPreviewScene(container, base = './assets/') {
   const hint = document.createElement('div');
   hint.textContent = 'Двигай мышью или наклоняй телефон · клик — заново';
   Object.assign(hint.style, {
-    position: 'fixed', left: '50%', bottom: '24px', transform: 'translateX(-50%)',
+    position: 'fixed', left: '50%', bottom: 'calc(max(16px, calc(env(safe-area-inset-bottom) + 8px)) + 64px)', transform: 'translateX(-50%)',
     padding: '10px 18px', borderRadius: '999px', background: 'rgba(7,18,26,.72)',
     color: '#f1e6cf', font: '14px "Helvetica Neue", Arial, sans-serif', whiteSpace: 'nowrap', zIndex: 5,
   });
